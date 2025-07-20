@@ -4,7 +4,7 @@ import type React from 'react';
 import { createContext, useContext } from 'react';
 import type { Language, Translations } from '@/i18n/i18n.types';
 import { translations, defaultLanguage } from '@/i18n/config';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 interface LanguageContextType {
   language: Language;
@@ -28,21 +28,37 @@ export function LanguageProvider({
   const pathname = usePathname();
   const router = useRouter();
 
+  //TODO: Future improvement
   // Extract language from pathname or use initial/default
-  const getLanguageFromPath = (): Language => {
-    if (initialLanguage) return initialLanguage;
+  // const getLanguageFromPath = (): Language => {
+  //   if (initialLanguage) return initialLanguage;
 
-    const segments = pathname.split('/');
-    const potentialLang = segments[1] as Language;
+  //   const segments = pathname.split('/');
+  //   const potentialLang = segments[1] as Language;
 
-    if (potentialLang === 'id' || potentialLang === 'en') {
-      return potentialLang;
+  //   if (potentialLang === 'id' || potentialLang === 'en') {
+  //     return potentialLang;
+  //   }
+
+  //   return defaultLanguage;
+  // };
+
+  /**
+   * [NOTE]: Currently we will get the selected language from 2 sides
+   * - URL Query Params -> support SSR
+   * - Local Storage -> support CSR
+   */
+  const searchParams = useSearchParams();
+  const languageParam = searchParams.get('lang');
+
+  let finalSelectedLanguage: Language | null = null;
+  if (!!languageParam) {
+    if (languageParam === 'en') {
+      finalSelectedLanguage = 'en';
+    } else {
+      finalSelectedLanguage = 'id';
     }
-
-    return defaultLanguage;
-  };
-
-  const language = getLanguageFromPath();
+  }
 
   const setLanguage = (newLang: Language) => {
     // Get current path without language prefix
@@ -67,10 +83,12 @@ export function LanguageProvider({
     router.push(newPath + searchParams);
   };
 
-  const t = translations[language];
+  const t = translations[finalSelectedLanguage || 'id'];
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageContext.Provider
+      value={{ language: finalSelectedLanguage || 'id', setLanguage, t }}
+    >
       {children}
     </LanguageContext.Provider>
   );
